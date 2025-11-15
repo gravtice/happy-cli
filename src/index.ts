@@ -266,9 +266,21 @@ ${chalk.bold('To clean up runaway processes:')} Use ${chalk.cyan('happy doctor c
         unknownArgs.push(arg)
       } else if (arg === '--happy-starting-mode') {
         options.startingMode = z.enum(['local', 'remote']).parse(args[++i])
-      } else if (arg === '--yolo') {
-        // Shortcut for --dangerously-skip-permissions
+      } else if (arg === '--yolo' || arg === '--dangerously-skip-permissions') {
+        // Set permission mode for session metadata
+        options.permissionMode = 'bypassPermissions'
+        // Also pass through to claude
         unknownArgs.push('--dangerously-skip-permissions')
+      } else if (arg === '--dangerously-accept-edit-requests') {
+        // Set permission mode for session metadata
+        options.permissionMode = 'acceptEdits'
+        // Also pass through to claude
+        unknownArgs.push(arg)
+      } else if (arg === '--plan') {
+        // Set permission mode for session metadata
+        options.permissionMode = 'plan'
+        // Also pass through to claude
+        unknownArgs.push(arg)
       } else if (arg === '--started-by') {
         options.startedBy = args[++i] as 'daemon' | 'terminal'
       } else {

@@ -44,8 +44,15 @@ export class PermissionHandler {
     private permissionMode: PermissionMode = 'default';
     private onPermissionRequestCallback?: (toolCallId: string) => void;
 
-    constructor(session: Session) {
+    constructor(session: Session, initialPermissionMode?: PermissionMode) {
         this.session = session;
+        // Initialize with provided permission mode if available
+        if (initialPermissionMode) {
+            this.permissionMode = initialPermissionMode;
+            logger.debug(`[PermissionHandler] Initialized with permission mode: ${initialPermissionMode}`);
+        } else {
+            logger.debug(`[PermissionHandler] Initialized with default permission mode`);
+        }
         this.setupClientHandler();
     }
     

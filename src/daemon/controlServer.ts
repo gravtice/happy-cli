@@ -108,7 +108,10 @@ export function startDaemonControlServer({
       schema: {
         body: z.object({
           directory: z.string(),
-          sessionId: z.string().optional()
+          sessionId: z.string().optional(),
+          agent: z.enum(['claude', 'codex']).optional(),
+          permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan', 'read-only', 'safe-yolo', 'yolo']).optional(),
+          modelMode: z.string().optional()
         }),
         response: {
           200: z.object({
@@ -129,10 +132,10 @@ export function startDaemonControlServer({
         }
       }
     }, async (request, reply) => {
-      const { directory, sessionId } = request.body;
+      const { directory, sessionId, agent, permissionMode, modelMode } = request.body;
 
-      logger.debug(`[CONTROL SERVER] Spawn session request: dir=${directory}, sessionId=${sessionId || 'new'}`);
-      const result = await spawnSession({ directory, sessionId });
+      logger.debug(`[CONTROL SERVER] Spawn session request: dir=${directory}, sessionId=${sessionId || 'new'}, agent=${agent || 'default'}, permissionMode=${permissionMode || 'default'}, modelMode=${modelMode || 'default'}`);
+      const result = await spawnSession({ directory, sessionId, agent, permissionMode, modelMode });
 
       switch (result.type) {
         case 'success':

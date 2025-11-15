@@ -107,11 +107,13 @@ export async function claudeRemote(opts: {
 
     // Prepare SDK options
     let mode = initial.mode;
+    logger.debug(`[claudeRemote] initial.mode:`, initial.mode);
+    logger.debug(`[claudeRemote] initial.mode.permissionMode: ${initial.mode.permissionMode}`);
     const sdkOptions: Options = {
         cwd: opts.path,
         resume: startFrom ?? undefined,
         mcpServers: opts.mcpServers,
-        permissionMode: initial.mode.permissionMode === 'plan' ? 'plan' : 'default',
+        permissionMode: initial.mode.permissionMode,
         model: initial.mode.model,
         fallbackModel: initial.mode.fallbackModel,
         customSystemPrompt: initial.mode.customSystemPrompt ? initial.mode.customSystemPrompt + '\n\n' + systemPrompt : undefined,
@@ -125,6 +127,8 @@ export async function claudeRemote(opts: {
             return resolve(join(projectPath(), 'scripts', 'claude_remote_launcher.cjs'));
         })(),
     }
+
+    logger.debug(`[claudeRemote] sdkOptions.permissionMode: ${sdkOptions.permissionMode}`);
 
     // Track thinking state
     let thinking = false;

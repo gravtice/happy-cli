@@ -312,7 +312,10 @@ export type Metadata = {
   lifecycleStateSince?: number,
   archivedBy?: string,
   archiveReason?: string,
-  flavor?: string
+  flavor?: string,
+  // Session configuration
+  permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan',
+  modelMode?: 'default' | string
 };
 
 export type AgentState = {

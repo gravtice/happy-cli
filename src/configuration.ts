@@ -27,6 +27,10 @@ class Configuration {
   public readonly isExperimentalEnabled: boolean
   public readonly disableCaffeinate: boolean
 
+  // Permission configuration (for gbox and other automation scenarios)
+  public readonly autoBypassPermissions: boolean
+  public readonly defaultPermissionMode: string
+
   constructor() {
     // Server configuration - priority: parameter > environment > default
     this.serverUrl = process.env.HAPPY_SERVER_URL || 'https://api.cluster-fluster.com'
@@ -53,6 +57,12 @@ class Configuration {
 
     this.isExperimentalEnabled = ['true', '1', 'yes'].includes(process.env.HAPPY_EXPERIMENTAL?.toLowerCase() || '');
     this.disableCaffeinate = ['true', '1', 'yes'].includes(process.env.HAPPY_DISABLE_CAFFEINATE?.toLowerCase() || '');
+
+    // Permission configuration
+    // HAPPY_AUTO_BYPASS_PERMISSIONS: Set to '1' to automatically add --dangerously-skip-permissions (for gbox)
+    this.autoBypassPermissions = ['true', '1', 'yes'].includes(process.env.HAPPY_AUTO_BYPASS_PERMISSIONS?.toLowerCase() || '');
+    // HAPPY_DEFAULT_PERMISSION_MODE: Set default permission mode (default, bypassPermissions, acceptEdits, plan, yolo, safe-yolo, read-only)
+    this.defaultPermissionMode = process.env.HAPPY_DEFAULT_PERMISSION_MODE || 'default';
 
     this.currentCliVersion = packageJson.version
 

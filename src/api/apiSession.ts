@@ -316,6 +316,13 @@ export class ApiSessionClient extends EventEmitter {
     }
 
     /**
+     * Get current metadata
+     */
+    getMetadata(): Metadata | null {
+        return this.metadata;
+    }
+
+    /**
      * Update session metadata
      * @param handler - Handler function that returns the updated metadata
      */

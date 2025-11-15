@@ -263,6 +263,61 @@ export async function startDaemon(): Promise<void> {
           '--started-by', 'daemon'
         ];
 
+        // Determine effective permission mode
+        // Priority: 1. options.permissionMode (from mobile app)
+        //           2. environment variable (HAPPY_AUTO_BYPASS_PERMISSIONS for gbox)
+        //           3. configuration.defaultPermissionMode (HAPPY_DEFAULT_PERMISSION_MODE)
+        let effectivePermissionMode: string | undefined = options.permissionMode;
+
+        if (!effectivePermissionMode && configuration.autoBypassPermissions) {
+          effectivePermissionMode = 'bypassPermissions';
+          logger.debug('[DAEMON RUN] Using bypassPermissions from HAPPY_AUTO_BYPASS_PERMISSIONS env var');
+        } else if (!effectivePermissionMode && configuration.defaultPermissionMode !== 'default') {
+          effectivePermissionMode = configuration.defaultPermissionMode;
+          logger.debug(`[DAEMON RUN] Using permission mode from HAPPY_DEFAULT_PERMISSION_MODE: ${effectivePermissionMode}`);
+        }
+
+        logger.debug(`[DAEMON RUN] Effective permission mode: ${effectivePermissionMode || 'default'}, agent: ${options.agent}`);
+
+        // Add permission mode arguments based on agent type
+        if (effectivePermissionMode && options.agent) {
+          if (options.agent === 'claude') {
+            // Claude permission modes
+            if (effectivePermissionMode === 'bypassPermissions') {
+              args.push('--dangerously-skip-permissions');
+              logger.debug('[DAEMON RUN] Added --dangerously-skip-permissions for Claude');
+            } else if (effectivePermissionMode === 'acceptEdits') {
+              args.push('--dangerously-accept-edit-requests');
+              logger.debug('[DAEMON RUN] Added --dangerously-accept-edit-requests for Claude');
+            } else if (effectivePermissionMode === 'plan') {
+              args.push('--plan');
+              logger.debug('[DAEMON RUN] Added --plan for Claude');
+            }
+          } else if (options.agent === 'codex') {
+            // Codex permission modes
+            if (effectivePermissionMode === 'yolo' || effectivePermissionMode === 'bypassPermissions') {
+              args.push('--yolo');
+              logger.debug('[DAEMON RUN] Added --yolo for Codex');
+            } else if (effectivePermissionMode === 'safe-yolo') {
+              args.push('--safe-yolo');
+              logger.debug('[DAEMON RUN] Added --safe-yolo for Codex');
+            } else if (effectivePermissionMode === 'read-only') {
+              args.push('--read-only');
+              logger.debug('[DAEMON RUN] Added --read-only for Codex');
+            }
+          }
+        }
+
+        // Add model mode if specified
+        if (options.modelMode && options.agent === 'claude') {
+          // Model mode is passed directly to Claude Code
+          args.push('--force-model', options.modelMode);
+          logger.debug(`[DAEMON RUN] Added --force-model ${options.modelMode} for Claude`);
+        }
+
+        logger.debug(`[DAEMON RUN] Final args: ${JSON.stringify(args)}`);
+
+
         // TODO: In future, sessionId could be used with --resume to continue existing sessions
         // For now, we ignore it - each spawn creates a new session
         const happyProcess = spawnHappyCLI(args, {

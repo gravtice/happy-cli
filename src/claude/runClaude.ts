@@ -39,7 +39,7 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
 
     // Log environment info at startup
     logger.debugLargeJson('[START] Happy process started', getEnvironmentInfo());
-    logger.debug(`[START] Options: startedBy=${options.startedBy}, startingMode=${options.startingMode}`);
+    logger.debug(`[START] Options: startedBy=${options.startedBy}, startingMode=${options.startingMode}, permissionMode=${options.permissionMode}`);
 
     // Validate daemon spawn requirements
     if (options.startedBy === 'daemon' && options.startingMode === 'local') {
@@ -86,7 +86,10 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
         // Initialize lifecycle state
         lifecycleState: 'running',
         lifecycleStateSince: Date.now(),
-        flavor: 'claude'
+        flavor: 'claude',
+        // Initialize session configuration
+        permissionMode: options.permissionMode || 'default',
+        modelMode: options.model ? 'custom' : 'default'
     };
     const response = await api.getOrCreateSession({ tag: sessionTag, metadata, state });
     logger.debug(`Session created: ${response.id}`);
@@ -170,10 +173,25 @@ export async function runClaude(credentials: Credentials, options: StartOptions 
         if (message.meta?.permissionMode) {
             const validModes: PermissionMode[] = ['default', 'acceptEdits', 'bypassPermissions', 'plan'];
             if (validModes.includes(message.meta.permissionMode as PermissionMode)) {
-                messagePermissionMode = message.meta.permissionMode as PermissionMode;
-                currentPermissionMode = messagePermissionMode;
-                logger.debug(`[loop] Permission mode updated from user message to: ${currentPermissionMode}`);
+                const receivedMode = message.meta.permissionMode as PermissionMode;
 
+                // Smart permission mode handling:
+                // If message has 'default' but we have a specific mode set (from CLI args or previous messages),
+                // prefer the current mode to avoid mobile client overriding local settings
+                if (receivedMode === 'default' && currentPermissionMode && currentPermissionMode !== 'default') {
+                    logger.debug(`[loop] Message has 'default' permissionMode, keeping current: ${currentPermissionMode}`);
+                    messagePermissionMode = currentPermissionMode;
+                } else {
+                    messagePermissionMode = receivedMode;
+                    currentPermissionMode = messagePermissionMode;
+                    logger.debug(`[loop] Permission mode updated from user message to: ${currentPermissionMode}`);
+
+                    // Update metadata to persist permission mode
+                    session.updateMetadata((metadata) => ({
+                        ...metadata,
+                        permissionMode: currentPermissionMode
+                    }));
+                }
             } else {
                 logger.debug(`[loop] Invalid permission mode received: ${message.meta.permissionMode}`);
             }

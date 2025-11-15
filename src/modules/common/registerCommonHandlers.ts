@@ -121,6 +121,10 @@ export interface SpawnSessionOptions {
     approvedNewDirectoryCreation?: boolean;
     agent?: 'claude' | 'codex';
     token?: string;
+    // Permission mode configuration (allows mobile app to specify)
+    permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan' | 'read-only' | 'safe-yolo' | 'yolo';
+    // Model mode configuration
+    modelMode?: string;
 }
 
 export type SpawnSessionResult =

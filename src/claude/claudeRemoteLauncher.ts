@@ -11,7 +11,7 @@ import { formatClaudeMessageForInk } from "@/ui/messageFormatterInk";
 import { logger } from "@/ui/logger";
 import { SDKToLogConverter } from "./utils/sdkToLogConverter";
 import { PLAN_FAKE_REJECT } from "./sdk/prompts";
-import { EnhancedMode } from "./loop";
+import { EnhancedMode, PermissionMode } from "./loop";
 import { RawJSONLines } from "@/claude/types";
 import { OutgoingMessageQueue } from "./utils/OutgoingMessageQueue";
 import { getToolName } from "./utils/getToolName";
@@ -97,7 +97,11 @@ export async function claudeRemoteLauncher(session: Session): Promise<'switch' |
     // Removed catch-all stdin handler - now handled by RemoteModeDisplay keyboard handlers
 
     // Create permission handler
-    const permissionHandler = new PermissionHandler(session);
+    // Read initial permission mode from session metadata if available
+    const metadata = session.client.getMetadata();
+    const initialPermissionMode = metadata?.permissionMode as PermissionMode | undefined;
+    logger.debug(`[remote] Creating PermissionHandler with initial mode from metadata: ${initialPermissionMode || 'default'}`);
+    const permissionHandler = new PermissionHandler(session, initialPermissionMode);
 
     // Create outgoing message queue
     const messageQueue = new OutgoingMessageQueue(
