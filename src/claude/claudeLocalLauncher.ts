@@ -3,6 +3,7 @@ import { claudeLocal } from "./claudeLocal";
 import { Session } from "./session";
 import { Future } from "@/utils/future";
 import { createSessionScanner } from "./utils/sessionScanner";
+import { parseSpecialCommand } from "@/parsers/specialCommands";
 
 export async function claudeLocalLauncher(session: Session): Promise<'switch' | 'exit'> {
 
@@ -10,7 +11,18 @@ export async function claudeLocalLauncher(session: Session): Promise<'switch' | 
     const scanner = await createSessionScanner({
         sessionId: session.sessionId,
         workingDirectory: session.path,
-        onMessage: (message) => { 
+        onMessage: (message) => {
+            // Check for /clear command in user messages
+            if (message.type === 'user' && typeof message.message.content === 'string') {
+                const specialCommand = parseSpecialCommand(message.message.content);
+                if (specialCommand.type === 'clear') {
+                    logger.debug('[claudeLocalLauncher] Detected /clear command in local mode');
+                    // Clear session ID and update metadata
+                    session.clearSessionId();
+                    logger.debug('[claudeLocalLauncher] Session ID cleared and metadata updated');
+                }
+            }
+
             // Block SDK summary messages - we generate our own
             if (message.type !== 'summary') {
                 session.client.sendClaudeSessionMessage(message)

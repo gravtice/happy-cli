@@ -41,15 +41,15 @@ export async function claudeLocal(opts: {
             }
             detectedIdsFileSystem.add(sessionId);
 
-            // Try to match
-            if (resolvedSessionId) {
-                return;
-            }
-
             // Try to match with random UUID
             if (detectedIdsRandomUUID.has(sessionId)) {
-                resolvedSessionId = sessionId;
+                // Always notify new session detection, even if we already have a resolved session
+                // This is needed to handle /clear command which creates a new session
+                if (!resolvedSessionId) {
+                    resolvedSessionId = sessionId;
+                }
                 opts.onSessionFound(sessionId);
+                logger.debug(`[ClaudeLocal] New session detected and notified: ${sessionId}`);
             }
         }
     });
@@ -133,9 +133,15 @@ export async function claudeLocal(opts: {
                             case 'uuid':
                                 detectedIdsRandomUUID.add(message.value);
 
-                                if (!resolvedSessionId && detectedIdsFileSystem.has(message.value)) {
-                                    resolvedSessionId = message.value;
+                                // Check if file system already detected this session
+                                if (detectedIdsFileSystem.has(message.value)) {
+                                    // Always notify, even if we already have a resolved session
+                                    // This is needed for /clear command which creates new sessions
+                                    if (!resolvedSessionId) {
+                                        resolvedSessionId = message.value;
+                                    }
                                     opts.onSessionFound(message.value);
+                                    logger.debug(`[ClaudeLocal] New session UUID detected and notified: ${message.value}`);
                                 }
                                 break;
 

@@ -78,7 +78,13 @@ export class Session {
      */
     clearSessionId = (): void => {
         this.sessionId = null;
-        logger.debug('[Session] Session ID cleared');
+
+        // Update metadata to clear Claude Code session ID
+        this.client.updateMetadata((metadata) => ({
+            ...metadata,
+            claudeSessionId: undefined
+        }));
+        logger.debug('[Session] Session ID cleared and metadata updated');
     }
 
     /**
