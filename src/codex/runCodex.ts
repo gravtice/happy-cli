@@ -621,8 +621,8 @@ export async function runCodex(opts: {
                     switch (message.mode.permissionMode) {
                         case 'default': return 'untrusted' as const;
                         case 'read-only': return 'never' as const;
-                        case 'safe-yolo': return 'on-failure' as const;
-                        case 'yolo': return 'on-failure' as const;
+                        case 'safe-yolo': return 'on-request' as const;
+                        case 'yolo': return 'never' as const;  // Fixed: was 'on-failure'
                     }
                 })();
                 const sandbox = (() => {
@@ -635,12 +635,23 @@ export async function runCodex(opts: {
                 })();
 
                 if (!wasCreated) {
+                    // Check if config file has yolo settings - if so, don't override them
+                    // When HAPPY_AUTO_BYPASS_PERMISSIONS=1, let config.toml take precedence
+                    const shouldUseConfigFile = configuration.autoBypassPermissions && message.mode.permissionMode === 'default';
+
                     const startConfig: CodexSessionConfig = {
                         prompt: first ? message.message + '\n\n' + trimIdent(`Based on this message, call functions.happy__change_title to change chat session title that would represent the current task. If chat idea would change dramatically - call this function again to update the title.`) : message.message,
-                        sandbox,
-                        'approval-policy': approvalPolicy,
+                        // Only set sandbox/approval-policy if not using config file
+                        ...(shouldUseConfigFile ? {} : {
+                            sandbox,
+                            'approval-policy': approvalPolicy,
+                        }),
                         config: { mcp_servers: mcpServers }
                     };
+
+                    if (shouldUseConfigFile) {
+                        logger.debug('[Codex] HAPPY_AUTO_BYPASS_PERMISSIONS=1, letting ~/.codex/config.toml control permissions');
+                    }
                     if (message.mode.model) {
                         startConfig.model = message.mode.model;
                     }
